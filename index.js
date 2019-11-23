@@ -9,6 +9,11 @@ const router = require('./router');
 const port = process.env.PORT || 5061;
 
 const app = express();
+app.use(function(req, res, next) {
+	res.header("Access-Control-Allow-Origin", "https://conjuring-2b5a2.firebaseapp.com/"); // update to match the domain you will make the request from
+	res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+	next();
+});
 const server = http.createServer(app);
 const io = socketio(server);
 
