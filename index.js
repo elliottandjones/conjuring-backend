@@ -7,7 +7,7 @@ const { addUser, removeUser, getUser, getUsersInRoom } = require('./users');
 const router = require('./router');
 
 const port = process.env.PORT || 5061;
-
+// https://whispering-brook-74854.herokuapp.com/
 const app = express();
 app.use(function(req, res, next) {
 	res.header("Access-Control-Allow-Origin", "https://conjuring-2b5a2.firebaseapp.com/"); // update to match the domain you will make the request from
@@ -39,7 +39,7 @@ io.on('connect', (socket) => {
   socket.on('sendMessage', (message, callback) => {
     const user = getUser(socket.id);
     console.log("sendMessage called!");
-    io.to(user.room).emit('message', { user: user.name, text: message, isAction:false, time: getTheTime() });
+    io.to(user.room).emit('message', { user: user.name, text: message, isAction:false, time: getTheTime(Date().now()) });
 
     callback();
   });
@@ -47,7 +47,7 @@ io.on('connect', (socket) => {
   socket.on('sendRollMessage', ({creature, action}, callback) => {
     const user = getUser(socket.id);
     console.log("SendRollMessage called!");
-    io.to(user.room).emit('message', { user: user.name, text: {creature, action}, isAction:true, time: getTheTime() });
+    io.to(user.room).emit('message', { user: user.name, text: {creature, action}, isAction:true, time: getTheTime(Date().now()) });
 
     callback();
   });
