@@ -12,11 +12,9 @@ const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 
-app.use(function(req, res, next) {
+app.use(function(req, res) {
   // res.header("Access-Control-Allow-Origin", "https://conjuring-2b5a2.firebaseapp.com/"); // update to match the domain you will make the request from
   res.header("Access-Control-Allow-Origin", "*");
-	res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-	next();
 });
 const port = process.env.PORT || 5061;
 // const publicDirectoryPath = path.join(__dirname, "../public");
