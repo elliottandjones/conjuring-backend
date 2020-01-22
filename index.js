@@ -1,72 +1,73 @@
-// const path = require('path');
-const http = require('http');
-const express = require('express');
-const socketio = require('socket.io');
-const cors = require('cors');
-const { addUser, removeUser, getUser, getUsersInRoom } = require('./users');
-const { conjureChatMessage, conjureRollMessage } = require('./messages')
-const router = require('./router');
+// const path = require("path");
+const http = require("http");
+const express = require("express");
+const cors = require("cors");
+const socketio = require("socket.io");
+const router = require("./router");
 
-// https://whispering-brook-74854.herokuapp.com/
+const { conjureChatMessage, conjureRollMessage } = require("./messages");
+const { addUser, removeUser, getUser, getUsersInRoom } = require("./users");
+
 const app = express();
 const server = http.createServer(app);
-const io = socketio(server);
-
-app.use(function(req, res) {
-  // res.header("Access-Control-Allow-Origin", "https://conjuring-2b5a2.firebaseapp.com/"); // update to match the domain you will make the request from
-  res.header("Access-Control-Allow-Origin", "*");
-});
-const port = process.env.PORT || 5061;
-// const publicDirectoryPath = path.join(__dirname, "../public");
-// app.use(express.static(publicDirectoryPath));
 app.use(cors());
+app.options("*", cors());
 app.use(router);
+const io = socketio(server);
+const port = process.env.PORT || 5016;
+// https://whispering-brook-74854.herokuapp.com/
 
-io.on('connect', (socket) => {
-  console.log("New WebSocket connection: " + socket.id);
-  
-  socket.on('join', ({ name, room }, callback) => {
-    console.log('socket.on("join") fired');
-    const { error, user } = addUser({ id: socket.id, name, room });
+// let buggySendRollMessage = 0;
+// let buggySendMessage = 0;
+io.on("connection", socket => {
+	console.log("New WebSocket connection: " + socket.id);
 
-    if(error) return callback(error);
+	socket.on("join", ({ name, room }, callback) => {
+		console.log("socket.on('join'), from SERVER");
+		const { error, user } = addUser({ id: socket.id, name, room });
 
-    socket.join(user.room);
+		if (error) return callback(error);
 
-    socket.emit('message', conjureChatMessage('Innkeeper',`${user.name}, Welcome!`));
-    socket.broadcast.to(user.room).emit('message', conjureChatMessage('Innkeeper', `${user.name} has joined!`));
+		socket.join(user.room);
 
-    io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room) });
+		socket.emit("message", conjureChatMessage("Innkeeper", `${user.name}, Welcome!`));
+		let test = conjureChatMessage(user.name, "TEST");
+		console.log(test, typeof test);
+		socket.broadcast.to(user.room).emit("message", conjureChatMessage("Innkeeper", `${user.name} has joined!`));
 
-    callback();
-  });
+		io.to(user.room).emit("roomData", { room: user.room, users: getUsersInRoom(user.room) });
 
-  socket.on('sendMessage', (message, callback) => {
-    console.log("sendMessage fired");
-    const user = getUser(socket.id);
-    io.to(user.room).emit('message', conjureChatMessage(user.name, message));
+		callback();
+	});
 
-    callback();
-  });
+	socket.on("sendMessage", (text, callback) => {
+		const user = getUser(socket.id);
+		io.to(user.room).emit("message", conjureChatMessage(user.name, text));
 
-  socket.on('sendRollMessage', ({creatureName, action}, callback) => {
-    console.log("SendRollMessage fired");
-    const user = getUser(socket.id);
-    io.to(user.room).emit('message', conjureRollMessage(user.name, creatureName, action));
+		console.log("sendMessage fired, from SERVER: ", conjureChatMessage(user.name, text));
+		// console.log(++buggySendMessage); // expect +1 every message
+		callback();
+	});
 
-    callback();
-  });
+	socket.on("sendRollMessage", ({ creatureName, action }, callback) => {
+		const user = getUser(socket.id);
+		io.to(user.room).emit("message", conjureRollMessage(user.name, creatureName, action));
 
-  socket.on('disconnect', () => {
-    console.log("Disconnected");
-    const user = removeUser(socket.id);
+		console.log("SendRollMessage fired, from SERVER: ", conjureRollMessage(user.name, creatureName, action));
+		// console.log(++buggySendRollMessage); // expect +2 every roll if bug is coming from server
+		callback();
+	});
 
-    if(user) {
-      io.to(user.room).emit('message', conjureChatMessage('Innkeeper', `${user.name} has left the Material Plane. Probably.`));
-      io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room)});
-    }
-  });
-  
+	socket.on("disconnect", () => {
+		console.log("Disconnected");
+		const user = removeUser(socket.id);
+
+		if (user) {
+			io.to(user.room).emit("message", conjureChatMessage("Innkeeper", `${user.name} has left the Material Plane. Probably.`));
+			io.to(user.room).emit("roomData", { room: user.room, users: getUsersInRoom(user.room) });
+		}
+	});
 });
 
 server.listen(port, () => console.log(`Server is running on port *: ${port}`));
+// console.log(`socket.io server is up on port *: ${port}`);
