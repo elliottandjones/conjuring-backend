@@ -1,7 +1,5 @@
 # conjuring-backend
 
-Server for the chat feature of my conjuring project
+Server for the real-time chat feature of my [conjuring](https://github.com/Elliohknow/conjuring) web app, which you can check out at https://conjuring.info/
 
-Uses node.js, express.js, and socket.io.
-
-you can view the app at https://conjuring.info/
+Uses Node.js, Express.js, Socket.io
